@@ -290,6 +290,20 @@ impl From<&str> for SU256 {
     }
 }
 
+impl From<i32> for SU256 {
+    fn from(val: i32) -> Self {
+        let val: U256 = val.into();
+        val.into()
+    }
+}
+
+impl From<usize> for SU256 {
+    fn from(val: usize) -> Self {
+        let val: U256 = val.into();
+        val.into()
+    }
+}
+
 impl_wrap_type!(SH160, H160, [u8; 20], deserialize_h160, serialize_h160);
 impl_wrap_rlp!(SH160, H160);
 impl_ssz_type!(SH160, [u8; 20]);
@@ -329,6 +343,12 @@ impl SU256 {
     }
     pub fn zero() -> SU256 {
         Self::default()
+    }
+    pub fn from_big_endian(slice: &[u8]) -> SU256 {
+        U256::from_big_endian(slice).into()
+    }
+    pub fn from_little_endian(slice: &[u8]) -> SU256 {
+        U256::from_little_endian(slice).into()
     }
 }
 
