@@ -134,7 +134,28 @@ macro_rules! impl_wrap_add {
         impl std::ops::Sub<&$wrap> for $wrap {
             type Output = Self;
             fn sub(self, rhs: &$wrap) -> Self::Output {
-                Self(self.0 - rhs.0)
+                $wrap(self.0 - rhs.0)
+            }
+        }
+
+        impl std::ops::Rem for $wrap {
+            type Output = $wrap;
+            fn rem(self, rhs: Self) -> Self::Output {
+                Self(self.0.rem(rhs.0))
+            }
+        }
+
+        impl std::ops::Rem for &$wrap {
+            type Output = $wrap;
+            fn rem(self, rhs: &$wrap) -> Self::Output {
+                $wrap(self.0 % rhs.0)
+            }
+        }
+
+        impl std::ops::Rem<&$wrap> for $wrap {
+            type Output = Self;
+            fn rem(self, rhs: &$wrap) -> Self::Output {
+                $wrap(self.0.rem(rhs.0))
             }
         }
     };
