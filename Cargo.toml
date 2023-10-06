@@ -28,6 +28,7 @@ triehash              = { version = "0.8", default-features = false }
 tiny-keccak           = { version = "2.0", features = ["keccak"] }
 hash-db               = { version = "0.15.2", default-features = false }
 hash256-std-hasher    = { version = "0.15.2", default-features = false }
+byteorder = { version = "=1.4.3", default-features = false }
 lazy_static = { version = "1.4.0", default-features = false, features = ["spin_no_std"] }
 
 
