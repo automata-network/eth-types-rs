@@ -358,6 +358,12 @@ impl From<SU256> for SH256 {
     }
 }
 
+impl From<&SH256> for SU256 {
+    fn from(val: &SH256) -> Self {
+        SU256::from_big_endian(&val.raw().0)
+    }
+}
+
 impl SU256 {
     pub fn one() -> SU256 {
         1u64.into()
