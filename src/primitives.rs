@@ -471,8 +471,11 @@ pub fn deserialize_u256<'de, D>(deserializer: D) -> Result<U256, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let s: String = Deserialize::deserialize(deserializer)?;
-    Ok(parse_string_u256(&s).map_err(Error::custom)?)
+    let s: Option<String> = Deserialize::deserialize(deserializer)?;
+    Ok(match s {
+        Some(s) => parse_string_u256(&s).map_err(Error::custom)?,
+        None => U256::default(),
+    })
 }
 
 pub fn parse_string_u256(u256_str: &str) -> Result<U256, FromStrRadixErr> {
