@@ -398,12 +398,12 @@ impl TransactionInner {
                 }
             }
             Self::DynamicFee(tx) => Secp256k1RecoverableSignature {
-                v: tx.v.as_u32() as _,
+                v: tx.v.as_u32() as u8,
                 r: tx.r.clone().into(),
                 s: tx.s.clone().into(),
             },
             Self::AccessList(tx) => Secp256k1RecoverableSignature {
-                v: tx.v.as_u32() as _,
+                v: tx.v.as_u32() as u8,
                 r: tx.r.clone().into(),
                 s: tx.s.clone().into(),
             },
@@ -419,24 +419,32 @@ impl TransactionInner {
     }
 
     pub fn sign(&mut self, prvkey: &Secp256k1PrivateKey, chain_id: u64) {
+        let mut trim_suffix = 0;
         match self {
             Self::Legacy(tx) => {
                 tx.v = chain_id.into();
-                tx.r = 0.into();
-                tx.s = 0.into();
-            }
-            Self::DynamicFee(tx) => {
-                tx.v = 0.into();
-                tx.r = 0.into();
-                tx.s = 0.into();
+                tx.r = Default::default();
+                tx.s = Default::default();
             }
             Self::AccessList(tx) => {
-                tx.v = 0.into();
-                tx.r = 0.into();
-                tx.s = 0.into();
+                tx.v = Default::default();
+                tx.r = Default::default();
+                tx.s = Default::default();
+                trim_suffix = 3;
+            }
+            Self::DynamicFee(tx) => {
+                tx.v = Default::default();
+                tx.r = Default::default();
+                tx.s = Default::default();
+                trim_suffix = 3;
             }
         }
-        let signed_txn_bytes = self.to_bytes();
+        let mut signed_txn_bytes = self.to_bytes();
+        if trim_suffix > 0 {
+            // truncate the signature
+            signed_txn_bytes[1] -= trim_suffix;
+            signed_txn_bytes.truncate(signed_txn_bytes.len() - trim_suffix as usize);
+        }
         let rec_sig = secp256k1_rec_sign_bytes(prvkey, &signed_txn_bytes);
         match self {
             Self::Legacy(tx) => {
