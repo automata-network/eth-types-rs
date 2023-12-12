@@ -1,6 +1,7 @@
 use std::prelude::v1::*;
 
 use super::{TransactionAccessTuple, SH160, SH256, SU256, SU64};
+use crypto::keccak_hash;
 use hex::HexBytes;
 use std::borrow::Cow;
 
@@ -52,6 +53,75 @@ impl StateAccount {
             return Ok(Self::default());
         }
         rlp::decode(data)
+    }
+}
+
+pub trait StateAccountTrait:
+    rlp::Encodable + rlp::Decodable + Default + Clone + std::fmt::Debug + Send + 'static
+{
+    fn is_exist(&self) -> bool;
+    fn set_balance(&mut self, val: SU256) -> bool;
+    fn balance(&self) -> SU256;
+    fn set_nonce(&mut self, val: u64) -> bool;
+    fn nonce(&self) -> u64;
+    fn code_hash(&self) -> SH256;
+    fn set_code(&mut self, code: &[u8]) -> bool;
+    fn root(&self) -> SH256;
+    fn update_root(&mut self, root: SH256) -> bool;
+}
+
+impl StateAccountTrait for StateAccount {
+    fn is_exist(&self) -> bool {
+        StateAccount::is_exist(self)
+    }
+
+    fn balance(&self) -> SU256 {
+        self.balance
+    }
+
+    fn code_hash(&self) -> SH256 {
+        self.code_hash
+    }
+
+    fn nonce(&self) -> u64 {
+        self.nonce
+    }
+
+    fn root(&self) -> SH256 {
+        self.root
+    }
+
+    fn set_balance(&mut self, val: SU256) -> bool {
+        if self.balance == val {
+            return false;
+        }
+        self.balance = val;
+        true
+    }
+
+    fn set_code(&mut self, code: &[u8]) -> bool {
+        let hash: SH256 = keccak_hash(code).into();
+        if self.code_hash == hash {
+            return false;
+        }
+        self.code_hash = hash;
+        true
+    }
+
+    fn set_nonce(&mut self, val: u64) -> bool {
+        if self.nonce == val {
+            return false;
+        }
+        self.nonce = val;
+        true
+    }
+
+    fn update_root(&mut self, root: SH256) -> bool {
+        if self.root == root {
+            return false;
+        }
+        self.root = root;
+        true
     }
 }
 
