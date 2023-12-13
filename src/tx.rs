@@ -470,7 +470,7 @@ impl TransactionInner {
     }
 
     pub fn sign_msg(&self, chain_id: &SU256) -> Vec<u8> {
-        let data = match tx {
+        let data = match self {
             TransactionInner::DynamicFee(tx) => {
                 // stream.append_raw(bytes, item_count)
                 let mut s = rlp::RlpStream::new_list(9);
