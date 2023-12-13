@@ -42,65 +42,6 @@ impl Signer {
     }
 
     pub fn msg(&self, tx: &TransactionInner) -> Vec<u8> {
-        let data = match tx {
-            TransactionInner::DynamicFee(tx) => {
-                // stream.append_raw(bytes, item_count)
-                let mut s = rlp::RlpStream::new_list(9);
-                s.append(&tx.chain_id);
-                s.append(&tx.nonce);
-                s.append(&tx.max_priority_fee_per_gas);
-                s.append(&tx.max_fee_per_gas);
-                s.append(&tx.gas);
-                s.append(&tx.to);
-                s.append(&tx.value);
-                s.append(&tx.data);
-                s.append_list(&tx.access_list);
-                let mut rlp = s.out().to_vec();
-                let mut out = vec![2];
-                out.append(&mut rlp);
-                out
-            }
-            TransactionInner::AccessList(tx) => {
-                // stream.append_raw(bytes, item_count)
-                let mut s = rlp::RlpStream::new_list(8);
-                s.append(&tx.chain_id);
-                s.append(&tx.nonce);
-                s.append(&tx.gas_price);
-                s.append(&tx.gas);
-                s.append(&tx.to);
-                s.append(&tx.value);
-                s.append(&tx.data);
-                s.append_list(&tx.access_list);
-
-                let mut rlp = s.out().to_vec();
-                let mut out = vec![1];
-                out.append(&mut rlp);
-                out
-            }
-            TransactionInner::Legacy(tx) => {
-                let v = tx.v.as_u64();
-                let is_protected = v != 27 && v != 28 && v != 1 && v != 0;
-                let mut len = 9;
-                if !is_protected {
-                    len = 6;
-                }
-                let mut s = rlp::RlpStream::new_list(len);
-                s.append(&tx.nonce);
-                s.append(&tx.gas_price);
-                s.append(&tx.gas);
-                s.append(&tx.to);
-                s.append(&tx.value);
-                s.append(&tx.data);
-
-                if is_protected {
-                    s.append(&self.chain_id);
-                    s.append(&0usize);
-                    s.append(&0usize);
-                }
-
-                s.out().into()
-            }
-        };
-        data
+        tx.sign_msg(&self.chain_id)
     }
 }
