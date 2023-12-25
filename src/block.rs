@@ -9,6 +9,7 @@ use ethereum_types::U64;
 use hash256_std_hasher::Hash256StdHasher;
 use hex::HexBytes;
 use rlp_derive::{RlpDecodable, RlpEncodable};
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize, Serializer};
 use std::iter::Iterator;
 use std::sync::Arc;
@@ -74,6 +75,38 @@ impl BlockHeader {
     }
 }
 
+pub trait BlockTrait: Clone + DeserializeOwned {}
+
+pub trait BlockHeaderTrait: Clone + DeserializeOwned {
+    fn gas_limit(&self) -> SU64;
+    fn base_fee(&self) -> Option<SU256>;
+    fn number(&self) -> SU64;
+    fn miner(&self) -> &SH160;
+    fn timestamp(&self) -> SU64;
+    fn hash(&self) -> SH256;
+}
+
+impl BlockHeaderTrait for BlockHeader {
+    fn gas_limit(&self) -> SU64 {
+        self.gas_limit
+    }
+    fn base_fee(&self) -> Option<SU256> {
+        Some(self.base_fee_per_gas)
+    }
+    fn number(&self) -> SU64 {
+        self.number
+    }
+    fn miner(&self) -> &SH160 {
+        &self.miner
+    }
+    fn timestamp(&self) -> SU64 {
+        self.timestamp
+    }
+    fn hash(&self) -> SH256 {
+        BlockHeader::hash(&self)
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Block {
@@ -82,6 +115,8 @@ pub struct Block {
     pub transactions: Vec<Transaction>,
     pub withdrawals: Option<Vec<Withdrawal>>, // rlp: optional
 }
+
+impl BlockTrait for Block {}
 
 #[derive(Clone, Debug, Deserialize, Serialize, Default, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -105,11 +140,11 @@ impl rlp::Encodable for Withdrawal {
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
-pub struct BlockSimple {
+pub struct BlockSimple<H, W> {
     #[serde(flatten)]
-    pub header: BlockHeader,
+    pub header: H,
     pub transactions: Vec<SH256>,
-    pub withdrawals: Option<Vec<Withdrawal>>, // rlp: optional
+    pub withdrawals: Option<Vec<W>>, // rlp: optional
 }
 
 impl Block {

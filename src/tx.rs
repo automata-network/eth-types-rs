@@ -9,6 +9,7 @@ use crypto::{
 use hex::HexBytes;
 use rlp_derive::{RlpDecodable, RlpEncodable};
 use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value};
 use std::sync::Arc;
 
 #[derive(
@@ -327,24 +328,6 @@ impl TransactionInner {
     pub fn reward(&self, gas: u64, base_fee: Option<&SU256>) -> Option<SU256> {
         self.effective_gas_tip(base_fee)
             .map(|item| item * SU256::from(gas))
-    }
-
-    pub fn effective_gas_tip(&self, base_fee: Option<&SU256>) -> Option<SU256> {
-        match base_fee {
-            None => Some(self.max_priority_fee_per_gas().clone()),
-            Some(base_fee) => {
-                let gas_fee_cap = self.max_fee_per_gas();
-                if gas_fee_cap < base_fee {
-                    None
-                } else {
-                    Some(
-                        self.max_priority_fee_per_gas()
-                            .clone()
-                            .min(gas_fee_cap - base_fee),
-                    )
-                }
-            }
-        }
     }
 
     pub fn max_priority_fee_per_gas(&self) -> &SU256 {
@@ -686,3 +669,105 @@ pub struct PoolTxRlp {
     pub result: String,
     pub allow_revert: bool,
 }
+
+pub trait TxTrait: Clone + std::fmt::Debug + Serialize {
+    fn gas_price(&self, base_fee: Option<SU256>) -> SU256;
+    fn max_priority_fee_per_gas(&self) -> &SU256;
+    fn gas(&self) -> SU64;
+    fn hash(&self) -> SH256;
+    fn max_fee_per_gas(&self) -> &SU256;
+    fn to(&self) -> Option<SH160>;
+    fn value(&self) -> SU256;
+    fn input(&self) -> &[u8];
+    fn nonce(&self) -> u64;
+    fn access_list(&self) -> Option<&[TransactionAccessTuple]>;
+    fn gas_limit(&self) -> u64;
+    fn sender(&self, signer: &Signer) -> SH160;
+    fn to_json_map(&self) -> Map<String, Value>;
+
+    fn effective_gas_tip(&self, base_fee: Option<&SU256>) -> Option<SU256> {
+        match base_fee {
+            None => Some(self.max_priority_fee_per_gas().clone()),
+            Some(base_fee) => {
+                let gas_fee_cap = self.max_fee_per_gas();
+                if gas_fee_cap < base_fee {
+                    None
+                } else {
+                    Some(
+                        self.max_priority_fee_per_gas()
+                            .clone()
+                            .min(gas_fee_cap - base_fee),
+                    )
+                }
+            }
+        }
+    }
+}
+
+impl TxTrait for TransactionInner {
+    fn gas_price(&self, base_fee: Option<SU256>) -> SU256 {
+        TransactionInner::gas_price(self, base_fee)
+    }
+    fn max_priority_fee_per_gas(&self) -> &SU256 {
+        TransactionInner::max_priority_fee_per_gas(&self)
+    }
+    fn gas(&self) -> SU64 {
+        TransactionInner::gas(&self)
+    }
+    fn hash(&self) -> SH256 {
+        TransactionInner::hash(&self)
+    }
+    fn max_fee_per_gas(&self) -> &SU256 {
+        TransactionInner::max_fee_per_gas(&self)
+    }
+    fn to(&self) -> Option<SH160> {
+        TransactionInner::to(self)
+    }
+    fn value(&self) -> SU256 {
+        TransactionInner::value(&self)
+    }
+    fn input(&self) -> &[u8] {
+        TransactionInner::input(&self)
+    }
+    fn nonce(&self) -> u64 {
+        TransactionInner::nonce(&self)
+    }
+    fn access_list(&self) -> Option<&[TransactionAccessTuple]> {
+        TransactionInner::access_list(self)
+    }
+    fn gas_limit(&self) -> u64 {
+        TransactionInner::gas_limit(self)
+    }
+    fn sender(&self, signer: &Signer) -> SH160 {
+        TransactionInner::sender(self, signer)
+    }
+    fn to_json_map(&self) -> Map<String, Value> {
+        let tx = match self {
+            TransactionInner::AccessList(tx) => serde_json::to_value(&tx).unwrap(),
+            TransactionInner::Legacy(tx) => serde_json::to_value(&tx).unwrap(),
+            TransactionInner::DynamicFee(tx) => serde_json::to_value(&tx).unwrap(),
+        };
+        match tx {
+            Value::Object(n) => n,
+            _ => unreachable!(),
+        }
+    }
+}
+
+// impl TxTrait for Transaction {
+//     fn access_list(&self) -> Option<&[TransactionAccessTuple]> {
+//         self.access_list.as_ref()
+//     }
+
+//     fn gas(&self) -> SU64 {
+//         self.gas
+//     }
+
+//     fn gas_limit(&self) -> u64 {
+//         self.gas
+//     }
+
+//     fn gas_price(&self, base_fee: Option<SU256>) -> SU256 {
+
+//     }
+// }

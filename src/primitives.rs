@@ -278,10 +278,15 @@ macro_rules! impl_ssz_type {
 }
 
 macro_rules! impl_asref {
-    ($name:ident) => {
+    ($name:ident, $ori:ty) => {
         impl AsRef<[u8]> for $name {
             fn as_ref(&self) -> &[u8] {
                 self.as_bytes()
+            }
+        }
+        impl $name {
+            pub fn from_slice(slice: &[u8]) -> $name {
+                <$ori>::from_slice(slice).into()
             }
         }
     };
@@ -291,7 +296,7 @@ impl_wrap_type!(SH256, H256, [u8; 32], deserialize_h256, serialize_h256);
 impl_wrap_cmp!(SH256, H256);
 impl_wrap_rlp!(SH256, H256);
 impl_ssz_type!(SH256, [u8; 32]);
-impl_asref!(SH256);
+impl_asref!(SH256, H256);
 
 impl From<&str> for SH256 {
     fn from(val: &str) -> Self {
@@ -329,7 +334,7 @@ impl_wrap_type!(SH160, H160, [u8; 20], deserialize_h160, serialize_h160);
 impl_wrap_rlp!(SH160, H160);
 impl_ssz_type!(SH160, [u8; 20]);
 impl_wrap_cmp!(SH160, H160);
-impl_asref!(SH160);
+impl_asref!(SH160, H160);
 
 impl From<&SH160> for SH256 {
     fn from(addr: &SH160) -> Self {
