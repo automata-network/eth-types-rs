@@ -29,6 +29,20 @@ pub struct Receipt {
     pub transaction_index: SU64,     // uint        `:""`
 }
 
+pub trait ReceiptTrait {
+    fn status(&self) -> SU64;
+    fn gas_used(&self) -> SU64;
+}
+
+impl ReceiptTrait for Receipt {
+    fn gas_used(&self) -> SU64 {
+        self.gas_used
+    }
+    fn status(&self) -> SU64 {
+        self.status
+    }
+}
+
 impl Receipt {
     pub fn status_encoding(&self) -> HexBytes {
         match &self.root {

@@ -3,7 +3,7 @@ use std::prelude::v1::*;
 use super::{TransactionInner, SH160, SU256};
 use crypto::{secp256k1_recover_pubkey, Secp256k1PrivateKey};
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Signer {
     pub chain_id: SU256,
 }

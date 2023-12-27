@@ -84,6 +84,8 @@ pub trait BlockHeaderTrait: Clone + DeserializeOwned {
     fn miner(&self) -> &SH160;
     fn timestamp(&self) -> SU64;
     fn hash(&self) -> SH256;
+    fn set_state_root(&mut self, state_root: SH256);
+    fn set_gas_used(&mut self, val: SU64);
 }
 
 impl BlockHeaderTrait for BlockHeader {
@@ -104,6 +106,12 @@ impl BlockHeaderTrait for BlockHeader {
     }
     fn hash(&self) -> SH256 {
         BlockHeader::hash(&self)
+    }
+    fn set_gas_used(&mut self, val: SU64) {
+        self.gas_used = val;
+    }
+    fn set_state_root(&mut self, state_root: SH256) {
+        self.state_root = state_root;
     }
 }
 
