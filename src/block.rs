@@ -8,7 +8,6 @@ use crypto::keccak_hash;
 use ethereum_types::U64;
 use hash256_std_hasher::Hash256StdHasher;
 use hex::HexBytes;
-use rlp_derive::{RlpDecodable, RlpEncodable};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize, Serializer};
 use std::iter::Iterator;
@@ -40,9 +39,7 @@ impl rlp::Decodable for BlockNonce {
     }
 }
 
-#[derive(
-    Default, Clone, Debug, Deserialize, Serialize, RlpEncodable, RlpDecodable, PartialEq, Eq,
-)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct BlockHeader {
     pub parent_hash: SH256,
@@ -63,7 +60,74 @@ pub struct BlockHeader {
     // BaseFee was added by EIP-1559 and is ignored in legacy headers.
     pub base_fee_per_gas: SU256,
     // WithdrawalsHash was added by EIP-4895 and is ignored in legacy headers.
-    pub withdrawals_root: Nilable<SH256>,
+    pub withdrawals_root: Option<SH256>,
+}
+
+impl Default for BlockHeader {
+    fn default() -> Self {
+        Self {
+            parent_hash: Default::default(),
+            sha3_uncles: Default::default(),
+            miner: Default::default(),
+            state_root: Default::default(),
+            transactions_root: Default::default(),
+            receipts_root: Default::default(),
+            logs_bloom: vec![0_u8; 256].into(),
+            difficulty: Default::default(),
+            number: Default::default(),
+            gas_limit: Default::default(),
+            gas_used: Default::default(),
+            timestamp: Default::default(),
+            extra_data: Default::default(),
+            mix_hash: Default::default(),
+            nonce: Default::default(),
+            base_fee_per_gas: Default::default(),
+            withdrawals_root: Default::default(),
+        }
+    }
+}
+
+impl rlp::Encodable for BlockHeader {
+    fn rlp_append(&self, s: &mut rlp::RlpStream) {
+        s.begin_unbounded_list();
+        s.append(&self.parent_hash);
+        s.append(&self.sha3_uncles);
+        s.append(&self.miner);
+        s.append(&self.state_root);
+        s.append(&self.transactions_root);
+        s.append(&self.receipts_root);
+        s.append(&self.logs_bloom);
+        s.append(&self.difficulty);
+        s.append(&self.number);
+        s.append(&self.gas_limit);
+        s.append(&self.gas_used);
+        s.append(&self.timestamp);
+        s.append(&self.extra_data);
+        s.append(&self.mix_hash);
+        s.append(&self.nonce);
+
+        let base_fee_per_gas = self.base_fee();
+        let op2 = self.withdrawals_root.is_some();
+
+        match base_fee_per_gas {
+            Some(n) => {
+                s.append(&n);
+            }
+            None => {
+                if op2 {
+                    s.append(&Nilable::<u64>(None));
+                }
+            }
+        }
+
+        match self.withdrawals_root {
+            Some(n) => {
+                s.append(&n);
+            }
+            None => {}
+        }
+        s.finalize_unbounded_list();
+    }
 }
 
 impl BlockHeader {
@@ -93,7 +157,11 @@ impl BlockHeaderTrait for BlockHeader {
         self.gas_limit
     }
     fn base_fee(&self) -> Option<SU256> {
-        Some(self.base_fee_per_gas)
+        if self.base_fee_per_gas == 0 {
+            None
+        } else {
+            Some(self.base_fee_per_gas)
+        }
     }
     fn number(&self) -> SU64 {
         self.number
