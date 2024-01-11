@@ -671,6 +671,14 @@ pub struct PoolTxRlp {
 }
 
 pub trait TxTrait: Clone + std::fmt::Debug + Serialize {
+    fn legacy(
+        nonce: SU64,
+        gas_price: SU256,
+        gas: SU64,
+        to: Option<SH160>,
+        value: SU256,
+        data: HexBytes,
+    ) -> Self;
     fn gas_price(&self, base_fee: Option<SU256>) -> SU256;
     fn max_priority_fee_per_gas(&self) -> &SU256;
     fn gas(&self) -> SU64;
@@ -683,6 +691,7 @@ pub trait TxTrait: Clone + std::fmt::Debug + Serialize {
     fn access_list(&self) -> Option<&[TransactionAccessTuple]>;
     fn gas_limit(&self) -> u64;
     fn sender(&self, signer: &Signer) -> SH160;
+    fn sign(&mut self, prvkey: &Secp256k1PrivateKey, chain_id: u64);
     fn to_json_map(&self) -> Map<String, Value>;
 
     fn effective_gas_tip(&self, base_fee: Option<&SU256>) -> Option<SU256> {
@@ -751,6 +760,30 @@ impl TxTrait for TransactionInner {
             Value::Object(n) => n,
             _ => unreachable!(),
         }
+    }
+    fn legacy(
+        nonce: SU64,
+        gas_price: SU256,
+        gas: SU64,
+        to: Option<SH160>,
+        value: SU256,
+        data: HexBytes,
+    ) -> Self {
+        Self::Legacy(LegacyTx {
+            nonce,
+            gas_price,
+            gas,
+            to: to.into(),
+            value,
+            data,
+            v: 0.into(),
+            r: 0.into(),
+            s: 0.into(),
+        })
+    }
+
+    fn sign(&mut self, prvkey: &Secp256k1PrivateKey, chain_id: u64) {
+        TransactionInner::sign(self, prvkey, chain_id)
     }
 }
 

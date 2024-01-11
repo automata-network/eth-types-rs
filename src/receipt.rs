@@ -3,7 +3,7 @@ use std::prelude::v1::*;
 use super::{SH160, SH256, SU256, SU64};
 use hex::HexBytes;
 use rlp_derive::RlpEncodable;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 #[derive(Default, Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -29,9 +29,10 @@ pub struct Receipt {
     pub transaction_index: SU64,     // uint        `:""`
 }
 
-pub trait ReceiptTrait {
+pub trait ReceiptTrait: Clone + DeserializeOwned {
     fn status(&self) -> SU64;
     fn gas_used(&self) -> SU64;
+    fn transaction_hash(&self) -> &SH256;
 }
 
 impl ReceiptTrait for Receipt {
@@ -40,6 +41,9 @@ impl ReceiptTrait for Receipt {
     }
     fn status(&self) -> SU64 {
         self.status
+    }
+    fn transaction_hash(&self) -> &SH256 {
+        &self.transaction_hash
     }
 }
 
